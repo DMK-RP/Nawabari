@@ -1,14 +1,14 @@
 {
   "name": "strelizia_repo_watchdog",
   "version": "1.0.0",
-  "description": "",
+  "description": "A watchdog to auto mirroring from framework repo to main repo",
   "main": "watchdog.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "holfz (holfzcompilation@gmail.com)",
+  "license": "MIT",
   "dependencies": {
     "@octokit/rest": "^17.9.0",
     "@octokit/webhooks": "^7.6.0",
