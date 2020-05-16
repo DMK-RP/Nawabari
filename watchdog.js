@@ -8,14 +8,15 @@ const {
 if (!secret || !port || !syncAccountName || !sync) { return; }
 
 /* Dependencies */
-const path = require('path');
 const async = require('async');
+const Base64 = require('js-base64').Base64;
 const { Webhooks } = require("@octokit/webhooks");
 
 /* Components */
 const { 
     getContents,
-    createOrUpdateFile,
+    push,
+    createBlob
 } = require('./Components/Github');
 
 /* Helpers */
@@ -28,29 +29,27 @@ const webhooks = new Webhooks({
 
 /* Function */
 function changedFiles(files) {
-    async.eachOfLimit(files, 1, function(data, key_path, cb) {
-        if (!data || !key_path) {
-            return cb();
+    let commits = [];
+    let tree = {
+        owner: sync.destination.owner,
+        repo: sync.destination.repository,
+        branch: sync.destination.branch,
+        changes : {
+            files: {},
+            commit: ''
+        }
+    }
+
+    async.each(files, function(data, cb) {
+        if (commits.indexOf(data.commit) == -1) {
+            commits.push(data.commit)
         }
 
-        getContents({ 
-            owner: sync.destination.owner,
-            repo: sync.destination.repository,
-            path: path.join(sync.destination.dist, key_path).replace(/\\/g, "/"),
-            ref: sync.destination.branch
-        }, function(res) {
-            res.data = data
-            cb(res);
-        })
-    }, function(res) {
-        createOrUpdateFile({
-            owner: sync.destination.owner, 
-            repo: sync.destination.repository, 
-            path: res.path, 
-            sha: res.sha || null,
-            branch: sync.destination.branch, 
-            content: res.data
-        })
+        tree.changes.files[data.path] = Base64.decode(data.data);
+        cb();
+    }, async function() {
+        tree.changes.commit = `Sync (${commits.join(", ")})`
+        return await push(tree);
     });
 }
 
@@ -71,7 +70,7 @@ webhooks.on("push", ({ id, name, payload }) => {
     let commits = payload.commits;
     if (commits.length <= 0) { return; }
 
-    let Filestochange = {};
+    let Filestochange = [];
 
     async.eachLimit(commits, 1, function(commit, cb) {
         let modified = commit.modified;
@@ -82,15 +81,21 @@ webhooks.on("push", ({ id, name, payload }) => {
                 owner: owner,
                 repo: repo,
                 path: path,
-            }, cb)
-        }, function(res) {
-            if (res.success && res.path && res.data) {
-                Filestochange[res.path] = res.data;
-            } else {
-                //TODO: Send discord alert
-                logError(`Error while pulling contents : ${res.message} | (Files : ${res.path})`, 'getContents')
-            }
+            }, function(res) {
+                if (res.success && res.path && res.data) {
+                    Filestochange.push({ 
+                        path: res.path,
+                        commit: commit.id.substring(0,7), 
+                        data: res.data
+                    });
+                } else {
+                    //TODO: Send discord alert
+                    logError(`Error while pulling contents : ${res.message} | (Files : ${res.path})`, 'getContents')
+                }
 
+                cb();
+            });
+        }, function(res) {
             cb();
         });
     }, function(res) {

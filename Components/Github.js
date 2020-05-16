@@ -21,6 +21,54 @@ const octokit = new Octokit({
 });
 
 /* Function */
+const push = async function ( data ) {
+    let valid = check.all(check.map(data, { 
+        owner: check.nonEmptyString,
+        repo: check.nonEmptyString,
+        branch: check.nonEmptyString
+    }));
+
+    let response = await octokit.repos.listCommits({
+        owner: data.owner,
+        repo: data.repo,
+        sha: data.branch,
+        per_page: 1
+    })
+    let latestCommitSha = response.data[0].sha;
+    let treeSha = response.data[0].commit.tree.sha;
+
+    response = await octokit.git.createTree({
+        owner: data.owner,
+        repo: data.repo,
+        base_tree: treeSha,
+        tree: Object.keys(data.changes.files).map(path => {
+            return {
+                path: path,
+                mode: "100644",
+                content: data.changes.files[path]
+            }
+        })
+    })
+    let newTreeSha = response.data.sha;
+
+    response = await octokit.git.createCommit({
+        owner: data.owner,
+        repo: data.repo,
+        message: data.changes.commit,
+        tree: newTreeSha,
+        parents: [latestCommitSha]
+    })
+    latestCommitSha = response.data.sha
+
+    return await octokit.git.updateRef({
+        owner: data.owner,
+        repo: data.repo,
+        sha: latestCommitSha,
+        ref: `heads/${data.branch}`,
+        force: true
+    })
+}
+
 const getContents = (data, callback) => {
     if (!callback) { return; }
 
@@ -45,77 +93,36 @@ const getContents = (data, callback) => {
     });
 }
 
-const createFile = (data, callback) => {
+const createBlob = (data, callback) => {
+    if (!callback) { return; }
+
     let valid = check.all(check.map(data, { 
         owner: check.nonEmptyString,
         repo: check.nonEmptyString,
-        path: check.nonEmptyString,
-        branch: check.nonEmptyString
+        content: check.nonEmptyString
     }));
 
-    if (!valid) { 
-        if (callback) { callback({success: false}); }
+    if (!valid) { return callback({success: false}); }
 
-        return;
-    }
-
-    octokit.repos.createFile({
+    octokit.git.createBlob({
         owner: data.owner,
         repo: data.repo,
-        path: data.path,
-        message: 'Synchronize ' + data.path,
         content: data.content,
-        branch: data.branch,
+        encoding: "utf-8"
     }).then(function(response) {
-        if (callback) {
-            callback({ success: true });   
-        }
+        return callback({
+            success: true, 
+            sha: response.data.sha
+        });
     }).catch(function(e) {
-        logError(e, 'createFile');
-
-        if (callback) {
-            callback({success: false, message: e, path: data.path});
-        }
-    });
-}
-
-const createOrUpdateFile = (data, callback) => {
-    let valid = check.all(check.map(data, { 
-        owner: check.nonEmptyString,
-        repo: check.nonEmptyString,
-        path: check.nonEmptyString,
-        branch: check.nonEmptyString,
-    }));
-
-    if (!valid) { 
-        if (callback) { callback({success: false}); }
-        
-        return;
-    }
-
-    octokit.repos.createOrUpdateFile({
-        owner: data.owner,
-        repo: data.repo,
-        path: data.path,
-        message: 'Synchronize ' + data.path,
-        sha: data.sha,
-        content: data.content,
-        branch: data.branch
-    }).then(function(response) {
-        if (callback) {
-            callback({ success: true });   
-        }
-    }).catch(function(e) {
-        logError(e, 'createOrUpdateFile');
-
-        if (callback) {
-            callback({success: false, message: e, path: data.path});
-        }
+        logError(e, 'createBlob');
+        return callback({success: false, message: e});
     });
 }
 
 /* Exporting */
 module.exports = {
     getContents,
-    createOrUpdateFile
+    push,
+    createBlob
 }
