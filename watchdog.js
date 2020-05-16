@@ -3,9 +3,10 @@ const {
     secret, 
     port, 
     syncAccountName, 
-    sync 
+    sync,
+    commitPrefix
 } = require('./config.json');
-if (!secret || !port || !syncAccountName || !sync) { return; }
+if (!secret || !port || !syncAccountName || !sync || !commitPrefix) { return; }
 
 /* Dependencies */
 const async = require('async');
@@ -48,7 +49,7 @@ function changedFiles(files) {
         tree.changes.files[data.path] = Base64.decode(data.data);
         cb();
     }, async function() {
-        tree.changes.commit = `Sync (${commits.join(", ")})`
+        tree.changes.commit = `${commitPrefix} Sync (${commits.join(", ")})`
         return await push(tree);
     });
 }
