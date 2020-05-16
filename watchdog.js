@@ -9,6 +9,7 @@ const {
 if (!secret || !port || !syncAccountName || !sync || !commitPrefix) { return; }
 
 /* Dependencies */
+const path = require('path');
 const async = require('async');
 const Base64 = require('js-base64').Base64;
 const { Webhooks } = require("@octokit/webhooks");
@@ -46,7 +47,7 @@ function changedFiles(files) {
             commits.push(data.commit)
         }
 
-        tree.changes.files[data.path] = Base64.decode(data.data);
+        tree.changes.files[path.join(sync.destination.dist, data.path).replace(/\\/g, "/")] = Base64.decode(data.data);
         cb();
     }, async function() {
         tree.changes.commit = `${commitPrefix} Sync (${commits.join(", ")})`
