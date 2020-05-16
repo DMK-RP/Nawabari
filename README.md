@@ -11,5 +11,5 @@ We push commit to the "Strelizia Apus" repo and the main repo too. That so tedio
 
  - More beauty on commit name and description
  - Bulk files in one commit
- - 
+ 
 # 
