@@ -1,0 +1,22 @@
+{
+    "authToken": "",
+    "secret": "",
+    "port": 3081,
+
+    "userAgent": "",
+    "commitPrefix": "",
+    "syncAccountName": "",
+    "sync": {
+        "source": {
+            "owner": "",
+            "repository": "",
+            "branch": ""
+        },
+        "destination": {
+            "owner": "",
+            "repository": "",
+            "dist": "",
+            "branch": ""
+        }
+    }
+}

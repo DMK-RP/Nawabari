@@ -8,9 +8,9 @@ In the [Project A](https://github.com/ProjectA-RP) we used our custom framework 
 We push commit to the "Strelizia Apus" repo and the main repo too. That so tedious right ? So this thing was created
 
 # Todo
+- More beauty on commit name and description (Done)
+- Bulk files in one commit (Done)
+- Discord alert when the error occurred 
+#
 
- - More beauty on commit name and description (Done)
- - Bulk files in one commit (Done)
- - Discord alert when the error occurred
- 
-# 
+𝔀𝓲𝓵𝓵 𝔂𝓸𝓾𝓻 𝓵𝓲𝓹𝓼 𝓽𝓪𝓼𝓽𝓮 𝓽𝓱𝓮 𝓴𝓲𝓼𝓼 𝓸𝓯 𝓭𝓮𝓪𝓽𝓱 ?
