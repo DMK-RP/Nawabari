@@ -1,0 +1,19 @@
+{
+  "name": "strelizia_repo_watchdog",
+  "version": "1.0.0",
+  "description": "",
+  "main": "watchdog.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@octokit/rest": "^17.9.0",
+    "@octokit/webhooks": "^7.6.0",
+    "async": "^3.2.0",
+    "chalk": "^4.0.0",
+    "check-types": "^11.1.2"
+  }
+}

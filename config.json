@@ -1,0 +1,21 @@
+{
+    "authToken": "",
+    "secret": "",
+    "port": 3081,
+
+    "userAgent": "strelizia_watchdog",
+    "syncAccountName": "Nawabari",
+    "sync": {
+        "source": {
+            "owner": "",
+            "repository": "",
+            "branch": ""
+        },
+        "destination": {
+            "owner": "",
+            "repository": "",
+            "dist": "",
+            "branch": ""
+        }
+    }
+}
