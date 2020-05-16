@@ -26,7 +26,7 @@ const { logInfo, logOk, logWarn, logError } = require('./Helpers/Logger');
 
 /* Variable */
 const webhooks = new Webhooks({
-    secret: "LiBMqqCZeQ7oMSRikZ6ctJYi8j8pMqrJ"
+    secret: secret
 });
 
 /* Function */
