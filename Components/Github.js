@@ -37,17 +37,44 @@ const push = async function ( data ) {
     let latestCommitSha = response.data[0].sha;
     let treeSha = response.data[0].commit.tree.sha;
 
+    // Tree code taken from : https://github.com/gr2m/octokit-create-pull-request/blob/master/lib/create-pull-request.js#L50
+    const tree = (
+        await Promise.all(
+            Object.keys(data.changes.files).map(async (path) => {
+                if (data.changes.files[path] === null) {
+                    // Deleting a non-existent file from a tree leads to an "GitRPC::BadObjectState" error
+                    try {
+                        const response = await octokit.request("HEAD /repos/:owner/:repo/contents/:path", {
+                            owner: data.owner,
+                            repo: data.repo,
+                            ref: latestCommitSha,
+                            path,
+                        });
+    
+                        return {
+                            path,
+                            mode: "100644",
+                            sha: null,
+                        };
+                    } catch (error) {
+                        return;
+                    }
+                }
+    
+                return {
+                    path,
+                    mode: "100644",
+                    content: data.changes.files[path],
+                };
+            })
+        )
+    ).filter(Boolean);
+
     response = await octokit.git.createTree({
         owner: data.owner,
         repo: data.repo,
         base_tree: treeSha,
-        tree: Object.keys(data.changes.files).map(path => {
-            return {
-                path: path,
-                mode: "100644",
-                content: data.changes.files[path]
-            }
-        })
+        tree: tree
     })
     let newTreeSha = response.data.sha;
 

@@ -44,10 +44,16 @@ function changedFiles(files) {
 
     async.each(files, function(data, cb) {
         if (commits.indexOf(data.commit) == -1) {
-            commits.push(data.commit)
+            commits.push(data.commit);
         }
 
-        tree.changes.files[path.join(sync.destination.dist, data.path).replace(/\\/g, "/")] = Base64.decode(data.data);
+        let changes = null;
+
+        if (data.data) {
+            changes = Base64.decode(data.data);
+        }
+
+        tree.changes.files[path.join(sync.destination.dist, data.path).replace(/\\/g, "/")] = changes;
         cb();
     }, async function() {
         tree.changes.commit = `${commitPrefix} Sync (${commits.join(", ")})`
@@ -75,29 +81,48 @@ webhooks.on("push", ({ id, name, payload }) => {
     let Filestochange = [];
 
     async.eachLimit(commits, 1, function(commit, cb) {
-        let modified = commit.modified;
-        if (modified.length <= 0) { return cb(); }
+        let prepare = {
+            modified: commit.modified,
+            removed: commit.removed
+        }
 
-        async.eachLimit(modified, 1, function(path, cb) {
-            getContents({ 
-                owner: owner,
-                repo: repo,
-                path: path,
-            }, function(res) {
-                if (res.success && res.path && res.data) {
+        if (prepare.modified.length <= 0 && prepare.removed.length <= 0) { return cb(); }
+
+        async.parallel([
+            function(callback) {
+                async.each(prepare.removed, function(path, cb) {
                     Filestochange.push({ 
-                        path: res.path,
+                        path: path,
                         commit: commit.id.substring(0,7), 
-                        data: res.data
+                        data: null
                     });
-                } else {
-                    //TODO: Send discord alert
-                    logError(`Error while pulling contents : ${res.message} | (Files : ${res.path})`, 'getContents')
-                }
-
-                cb();
-            });
-        }, function(res) {
+                    
+                    cb();
+                }, callback);
+            },
+            function(callback) { 
+                async.eachLimit(prepare.modified, 1, function(path, cb) {
+                    getContents({ 
+                        owner: owner,
+                        repo: repo,
+                        path: path,
+                    }, function(res) {
+                        if (res.success && res.path && res.data) {
+                            Filestochange.push({ 
+                                path: res.path,
+                                commit: commit.id.substring(0,7), 
+                                data: res.data
+                            });
+                        } else {
+                            //TODO: Send discord alert
+                            logError(`Error while pulling contents : ${res.message} | (Files : ${res.path})`, 'getContents')
+                        }
+        
+                        cb();
+                    });
+                }, callback)
+            }
+        ], function() {
             cb();
         });
     }, function(res) {
