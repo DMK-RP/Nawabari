@@ -83,10 +83,11 @@ webhooks.on("push", ({ id, name, payload }) => {
     async.eachLimit(commits, 1, function(commit, cb) {
         let prepare = {
             modified: commit.modified,
-            removed: commit.removed
+            removed: commit.removed,
+            added: commit.added
         }
 
-        if (prepare.modified.length <= 0 && prepare.removed.length <= 0) { return cb(); }
+        if (prepare.modified.length <= 0 && prepare.removed.length <= 0 && prepare.added.length <= 0) { return cb(); }
 
         async.parallel([
             function(callback) {
@@ -101,7 +102,9 @@ webhooks.on("push", ({ id, name, payload }) => {
                 }, callback);
             },
             function(callback) { 
-                async.eachLimit(prepare.modified, 1, function(path, cb) {
+                let merge = prepare.modified.concat(prepare.added);
+
+                async.eachLimit(merge, 1, function(path, cb) {
                     getContents({ 
                         owner: owner,
                         repo: repo,
