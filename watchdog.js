@@ -54,7 +54,13 @@ function changedFiles(files, syncInfo) {
             changes = Base64.decode(data.data);
         }
 
-        tree.changes.files[path.join(syncInfo.destination.dist, data.path).replace(/\\/g, "/")] = changes;
+        let mergePath = data.path;
+        if (syncInfo.source.src) {
+            mergePath = mergePath.replace(syncInfo.source.src, '');
+            mergePath = path.join(syncInfo.destination.dist, mergePath).replace(/\\/g, "/")
+        }
+        
+        tree.changes.files[mergePath] = changes;
         cb();
     }, async function() {
         tree.changes.commit = `${syncInfo.commitPrefix} Sync (${commits.join(", ")})`
