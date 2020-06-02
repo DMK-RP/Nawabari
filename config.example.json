@@ -4,19 +4,37 @@
     "port": 3081,
 
     "userAgent": "",
-    "commitPrefix": "",
     "syncAccountName": "",
-    "sync": {
-        "source": {
-            "owner": "",
-            "repository": "",
-            "branch": ""
+    "sync": [
+        {
+            "commitPrefix": "",
+            "source": {
+                "owner": "",
+                "repository": "",
+                "src": null, // null for all path
+                "branch": ""
+            },
+            "destination": {
+                "owner": "",
+                "repository": "",
+                "dist": "",
+                "branch": ""
+            }
         },
-        "destination": {
-            "owner": "",
-            "repository": "",
-            "dist": "",
-            "branch": ""
+        {
+            "commitPrefix": "",
+            "source": {
+                "owner": "",
+                "repository": "",
+                "src": "path/to/tracked/files",
+                "branch": ""
+            },
+            "destination": {
+                "owner": "",
+                "repository": "",
+                "dist": "",
+                "branch": ""
+            }
         }
-    }
+    ]
 }

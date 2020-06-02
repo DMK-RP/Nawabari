@@ -1,6 +1,6 @@
 {
   "name": "strelizia_repo_watchdog",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A watchdog to auto mirroring from framework repo to main repo",
   "main": "watchdog.js",
   "scripts": {
@@ -15,6 +15,7 @@
     "async": "^3.2.0",
     "chalk": "^4.0.0",
     "check-types": "^11.1.2",
-    "js-base64": "^2.5.2"
+    "js-base64": "^2.5.2",
+    "lodash": "^4.17.15"
   }
 }

@@ -3,12 +3,12 @@ const {
     secret, 
     port, 
     syncAccountName, 
-    sync,
-    commitPrefix
+    sync
 } = require('./config.json');
-if (!secret || !port || !syncAccountName || !sync || !commitPrefix) { return; }
+if (!secret || !port || !syncAccountName || !sync) { return; }
 
 /* Dependencies */
+const _ = require('lodash');
 const path = require('path');
 const async = require('async');
 const Base64 = require('js-base64').Base64;
@@ -23,6 +23,7 @@ const {
 
 /* Helpers */
 const { logInfo, logOk, logWarn, logError } = require('./Helpers/Logger');
+const { config } = require('process');
 
 /* Variable */
 const webhooks = new Webhooks({
@@ -30,12 +31,12 @@ const webhooks = new Webhooks({
 });
 
 /* Function */
-function changedFiles(files) {
+function changedFiles(files, syncInfo) {
     let commits = [];
     let tree = {
-        owner: sync.destination.owner,
-        repo: sync.destination.repository,
-        branch: sync.destination.branch,
+        owner: syncInfo.destination.owner,
+        repo: syncInfo.destination.repository,
+        branch: syncInfo.destination.branch,
         changes : {
             files: {},
             commit: ''
@@ -53,33 +54,33 @@ function changedFiles(files) {
             changes = Base64.decode(data.data);
         }
 
-        tree.changes.files[path.join(sync.destination.dist, data.path).replace(/\\/g, "/")] = changes;
+        tree.changes.files[path.join(syncInfo.destination.dist, data.path).replace(/\\/g, "/")] = changes;
         cb();
     }, async function() {
-        tree.changes.commit = `${commitPrefix} Sync (${commits.join(", ")})`
+        tree.changes.commit = `${syncInfo.commitPrefix} Sync (${commits.join(", ")})`
         return await push(tree);
     });
 }
 
 /* Event */
 webhooks.on("push", ({ id, name, payload }) => {
-    let owner = payload.repository.owner.name;
-    let repo = payload.repository.name;
-
-    if (owner !== sync.source.owner || repo !== sync.source.repository) { return; }
-
-    let signature = webhooks.sign(payload);
-    let verify = webhooks.verify(payload, signature);
+    const signature = webhooks.sign(payload);
+    const verify = webhooks.verify(payload, signature);
     if (!verify) { return; }
-
-    logInfo(`Got the push event (${id})`, 'webhooks');
     if (payload.pusher.name.toLowerCase() === syncAccountName.toLowerCase()) { return; }
     
-    let commits = payload.commits;
+    const owner = payload.repository.owner.name;
+    const repo = payload.repository.name;
+
+    const found = _.find(sync, function(o) { return o.source.owner.toLowerCase() == owner.toLowerCase() && o.source.repository.toLowerCase() == repo.toLowerCase() });
+    if (!found) { return; }
+
+    logInfo(`Got the push event (${id})`, 'webhooks');
+    
+    const commits = payload.commits;
     if (commits.length <= 0) { return; }
 
     let Filestochange = [];
-
     async.eachLimit(commits, 1, function(commit, cb) {
         let prepare = {
             modified: commit.modified,
@@ -89,11 +90,26 @@ webhooks.on("push", ({ id, name, payload }) => {
 
         if (prepare.modified.length <= 0 && prepare.removed.length <= 0 && prepare.added.length <= 0) { return cb(); }
 
+        let configPath;
+        if (found.source.src) {
+            configPath = path.parse(found.source.src);
+        }
+
         async.parallel([
             function(callback) {
-                async.each(prepare.removed, function(path, cb) {
+                async.each(prepare.removed, function(commitPath, cb) {
+                    let parsedPath;
+
+                    if (configPath) {
+                        parsedPath = path.parse(commitPath);
+                    }
+
+                    if (parsedPath && !parsedPath.dir.includes(configPath.dir)) {
+                        return cb();
+                    }
+
                     Filestochange.push({ 
-                        path: path,
+                        path: commitPath,
                         commit: commit.id.substring(0,7), 
                         data: null
                     });
@@ -104,11 +120,20 @@ webhooks.on("push", ({ id, name, payload }) => {
             function(callback) { 
                 let merge = prepare.modified.concat(prepare.added);
 
-                async.eachLimit(merge, 1, function(path, cb) {
+                async.eachLimit(merge, 1, function(commitPath, cb) {
+                    let parsedPath;
+                    if (configPath) {
+                        parsedPath = path.parse(commitPath);
+                    }
+
+                    if (parsedPath && !parsedPath.dir.includes(configPath.dir)) {
+                        return cb();
+                    }
+                    
                     getContents({ 
                         owner: owner,
                         repo: repo,
-                        path: path,
+                        path: commitPath,
                     }, function(res) {
                         if (res.success && res.path && res.data) {
                             Filestochange.push({ 
@@ -129,7 +154,7 @@ webhooks.on("push", ({ id, name, payload }) => {
             cb();
         });
     }, function(res) {
-        changedFiles(Filestochange);
+        changedFiles(Filestochange, found);
     });
 });
 
