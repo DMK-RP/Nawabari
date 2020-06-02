@@ -57,10 +57,9 @@ function changedFiles(files, syncInfo) {
         let mergePath = data.path;
         if (syncInfo.source.src) {
             mergePath = mergePath.replace(syncInfo.source.src, '');
-            mergePath = path.join(syncInfo.destination.dist, mergePath).replace(/\\/g, "/")
         }
         
-        tree.changes.files[mergePath] = changes;
+        tree.changes.files[path.join(syncInfo.destination.dist, mergePath).replace(/\\/g, "/")] = changes;
         cb();
     }, async function() {
         tree.changes.commit = `${syncInfo.commitPrefix} Sync (${commits.join(", ")})`
