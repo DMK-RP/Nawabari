@@ -3,7 +3,7 @@
 
 ![Nawabari on duty](https://i.imgur.com/GZBBq6o.png)
 
-Nawabari is the custom repo mirrorer for [Strelizia Apus](https://github.com/ProjectA-RP/strelizia_apus) that will mirror the code from framework repo to the [main project repo](https://github.com/ProjectA-RP/ProjectA)
+Nawabari is the custom repo mirrorer for [Strelizia Apus](https://github.com/Friends-RP/strelizia_apus) that will mirror the code from framework repo to the [main project repo](https://github.com/Friends-RP/Friends)
 
 In the [Project Friends](https://github.com/Friends-RP/) we used our custom framework called "Strelizia Apus" that located at her self repo (isolate from main repo). But the main repo also need the framework, What we do ?
 
