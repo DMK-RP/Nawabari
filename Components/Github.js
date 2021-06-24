@@ -85,7 +85,7 @@ const push = async function ( data ) {
     })
 }
 
-const getContents = (data) => {
+const getContents = async function (data) {
     let valid = check.all(check.map(data, { 
         owner: check.nonEmptyString,
         repo: check.nonEmptyString,
@@ -94,12 +94,13 @@ const getContents = (data) => {
 
     if (!valid) { return { success: false }; }
 
-    octokit.repos.getContents(data).then(function(response) {
+    try {
+        const response = await octokit.repos.getContents(data);
         return { success: true, sha: response.data.sha, path: response.data.path, data: response.data.content };
-    }).catch(function(e) {
+    } catch (e) {
         logError(e, 'getContents');
         return { success: false, message: e, path: data.path };
-    });
+    }
 }
 
 /* Exporting */
