@@ -35,12 +35,17 @@ async function changedFiles(files, syncInfo) {
             commits.push(file.commit);
         }
 
-        let mergePath = data.path;
+        let changes = null;
+        if (file.data) {
+            changes = Base64.decode(file.data);
+        }
+
+        let mergePath = file.path;
         if (syncInfo.source.src) {
             mergePath = mergePath.replace(syncInfo.source.src, '');
         }
 
-        tree.changes.files[path.join(syncInfo.destination.dist, mergePath).replace(/\\/g, "/")] = Base64.decode(data.data);
+        tree.changes.files[path.join(syncInfo.destination.dist, mergePath).replace(/\\/g, "/")] = changes;
     }
 
     tree.changes.commit = `${syncInfo.commitPrefix} Sync (${commits.join(", ")})`
@@ -56,7 +61,7 @@ webhooks.on("push", async ({ id, name, payload }) => {
     
     const owner = payload.repository.owner.name;
     const repo = payload.repository.name;
-    const branch = payload.ref.next.replace("refs/heads/", "");
+    const branch = payload.ref.replace("refs/heads/", "");
 
     const found = find(sync, function(o) { 
         return o.source.owner.toLowerCase() == owner.toLowerCase() && 
@@ -93,7 +98,7 @@ webhooks.on("push", async ({ id, name, payload }) => {
         }
 
         const merged = commit.modified.concat(commit.added);
-        for (const commitPath of merged) {
+        for await (const commitPath of merged) {
             let parsedPath;
             if (configPath) {
                 parsedPath = path.parse(commitPath);
@@ -104,7 +109,7 @@ webhooks.on("push", async ({ id, name, payload }) => {
             }
 
             try {
-                const res = await getContents({ owner: owner, repo: repo, path: commitPath });
+                const res = await getContents({ owner: owner, repo: repo, path: commitPath, ref: payload.ref });
                 if (res.success && res.path && res.data) {
                     filesToChange.push({ path: res.path, commit: commit.id.substring(0,7), data: res.data });
                 } else {
