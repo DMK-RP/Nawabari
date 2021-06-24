@@ -9,7 +9,7 @@ if (!authToken || !userAgent) {
 const check = require('check-types');
 
 /* Helpers */
-const { logInfo, logOk, logWarn, logError } = require('../Helpers/Logger');
+const { logError } = require('../Helpers/Logger');
 
 /* Dependencies */
 const { Octokit } = require("@octokit/rest");
@@ -22,18 +22,7 @@ const octokit = new Octokit({
 
 /* Function */
 const push = async function ( data ) {
-    let valid = check.all(check.map(data, { 
-        owner: check.nonEmptyString,
-        repo: check.nonEmptyString,
-        branch: check.nonEmptyString
-    }));
-
-    let response = await octokit.repos.listCommits({
-        owner: data.owner,
-        repo: data.repo,
-        sha: data.branch,
-        per_page: 1
-    })
+    let response = await octokit.repos.listCommits({ owner: data.owner, repo: data.repo, sha: data.branch, per_page: 1 });
     let latestCommitSha = response.data[0].sha;
     let treeSha = response.data[0].commit.tree.sha;
 
@@ -96,60 +85,22 @@ const push = async function ( data ) {
     })
 }
 
-const getContents = (data, callback) => {
-    if (!callback) { return; }
-
+const getContents = (data) => {
     let valid = check.all(check.map(data, { 
         owner: check.nonEmptyString,
         repo: check.nonEmptyString,
         path: check.nonEmptyString
     }));
 
-    if (!valid) { return callback({success: false}); }
+    if (!valid) { return { success: false }; }
 
     octokit.repos.getContents(data).then(function(response) {
-        return callback({
-            success: true, 
-            sha: response.data.sha,
-            path: response.data.path,
-            data: response.data.content
-        });
+        return { success: true, sha: response.data.sha, path: response.data.path, data: response.data.content };
     }).catch(function(e) {
         logError(e, 'getContents');
-        return callback({success: false, message: e, path: data.path});
-    });
-}
-
-const createBlob = (data, callback) => {
-    if (!callback) { return; }
-
-    let valid = check.all(check.map(data, { 
-        owner: check.nonEmptyString,
-        repo: check.nonEmptyString,
-        content: check.nonEmptyString
-    }));
-
-    if (!valid) { return callback({success: false}); }
-
-    octokit.git.createBlob({
-        owner: data.owner,
-        repo: data.repo,
-        content: data.content,
-        encoding: "utf-8"
-    }).then(function(response) {
-        return callback({
-            success: true, 
-            sha: response.data.sha
-        });
-    }).catch(function(e) {
-        logError(e, 'createBlob');
-        return callback({success: false, message: e});
+        return { success: false, message: e, path: data.path };
     });
 }
 
 /* Exporting */
-module.exports = {
-    getContents,
-    push,
-    createBlob
-}
+module.exports = { getContents, push }
