@@ -10,7 +10,7 @@
   "author": "holfz (holfzcompilation@gmail.com)",
   "license": "MIT",
   "dependencies": {
-    "@octokit/rest": "^17.9.0",
+    "@octokit/rest": "^19.0.13",
     "@octokit/webhooks": "^7.6.0",
     "chalk": "^4.0.0",
     "check-types": "^11.1.2",
